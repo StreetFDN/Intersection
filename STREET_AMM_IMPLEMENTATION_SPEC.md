@@ -354,8 +354,9 @@ contract FounderControls is Ownable {
             if (dailyVolume[pool] > maxDailyVolume[pool]) return false;
         }
         
-        // Check float limit (TODO: implement)
-        
+        // Float limit: check that pool reserves don't exceed maxFloatBps of each token's total supply
+        // IMPLEMENTED – see contracts/FounderControls.sol
+
         return true;
     }
 }
@@ -391,18 +392,16 @@ contract OffRampKYC {
     }
     
     /// @notice Approve KYC (called by Civic or admin)
+    /// IMPLEMENTED – access control enforced in contracts/OffRampKYC.sol
     function approveKYC(address user) external {
-        // TODO: Integrate with Civic gateway
-        // require(msg.sender == civicGateway || msg.sender == owner, "Not authorized");
-        
+        if (msg.sender != civicGateway && msg.sender != owner()) revert NotAuthorized();
         kycApproved[user] = true;
         emit KYCApproved(user);
     }
-    
+
     /// @notice Revoke KYC
     function revokeKYC(address user) external {
-        // require(msg.sender == civicGateway || msg.sender == owner, "Not authorized");
-        
+        if (msg.sender != civicGateway && msg.sender != owner()) revert NotAuthorized();
         kycApproved[user] = false;
         emit KYCRevoked(user);
     }

@@ -18,6 +18,7 @@ contract OffRampKYC is Ownable {
     constructor() Ownable() {}
 
     function setCivicGateway(address _civicGateway) external onlyOwner {
+        if (_civicGateway == address(0)) revert ZeroAddress();
         civicGateway = _civicGateway;
         emit CivicGatewaySet(_civicGateway);
     }
@@ -42,4 +43,5 @@ contract OffRampKYC is Ownable {
     }
 
     error NotAuthorized();
+    error ZeroAddress();
 }

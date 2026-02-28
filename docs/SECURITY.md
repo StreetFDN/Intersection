@@ -16,10 +16,11 @@ Street AMM is a fork of Aerodrome (Base, $500M+ TVL, multiple audits). Most code
 
 ## Street-specific considerations
 
-- **FounderControls:** Per-pool pause and volume/float limits. Only the registered founder (or owner for registration) can change them. Pool does not call `checkSwap` by default; integration is optional.
-- **OffRampKYC:** Optional; only owner or Civic gateway can approve/revoke. No impact on AMM trading.
+- **FounderControls:** Per-pool pause, volume limits, and float limits (max % of token supply held in pool). Only the registered founder (or owner for registration) can change them. Pool does not call `checkSwap` by default; integration is optional. Zero-address validation on `registerFounder`.
+- **OffRampKYC:** Optional; only owner or Civic gateway can approve/revoke. Zero-address validation on `setCivicGateway`. No impact on AMM trading.
 - **StreetBribe:** Platform fee (5%) is taken before rewarding voters; single transfer and bookkeeping in one call.
 - **StreetMinter:** No rebases; fixed schedule reduces logic surface vs. dynamic decay/growth.
+- **StreetToken:** `MAX_SUPPLY` (1B) enforced on every `mint()` call; reverts if exceeded.
 
 ## Audits and bounties
 

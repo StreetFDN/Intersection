@@ -28,6 +28,7 @@ contract StreetToken is IStreetToken, ERC20Permit {
 
     function mint(address account, uint256 amount) external returns (bool) {
         if (msg.sender != minter) revert NotMinter();
+        if (totalSupply() + amount > MAX_SUPPLY) revert ExceedsMaxSupply();
         _mint(account, amount);
         return true;
     }

@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IPool} from "./interfaces/IPool.sol";
 
 /// @title FounderControls
 /// @notice Optional per-pool controls for startup founders (pause, volume limit, float limit).
@@ -9,6 +11,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract FounderControls is Ownable {
     error InvalidBps();
     error NotFounder();
+    error ZeroAddress();
 
     /// @notice Founder address per pool (set by owner)
     mapping(address => address) public poolFounders;
@@ -38,6 +41,7 @@ contract FounderControls is Ownable {
 
     /// @notice Register pool founder (only owner).
     function registerFounder(address pool, address founder) external onlyOwner {
+        if (pool == address(0) || founder == address(0)) revert ZeroAddress();
         poolFounders[pool] = founder;
         emit FounderRegistered(pool, founder);
     }
@@ -61,7 +65,7 @@ contract FounderControls is Ownable {
         emit VolumeLimitSet(pool, maxVolume);
     }
 
-    /// @notice Check if swap is allowed for this pool (pause + daily volume).
+    /// @notice Check if swap is allowed for this pool (pause + daily volume + float limit).
     /// @param pool Pool address
     /// @param amountOut Output amount of the swap (used for volume accounting)
     /// @return true if swap allowed
@@ -77,7 +81,19 @@ contract FounderControls is Ownable {
             if (dailyVolume[pool] > maxDailyVolume[pool]) return false;
         }
 
-        // Float limit would require pool supply + token totalSupply - not implemented here
+        // Float limit: check that pool reserves don't exceed maxFloatBps of each token's total supply
+        uint256 _maxFloatBps = maxFloatBps[pool];
+        if (_maxFloatBps > 0) {
+            address token0 = IPool(pool).token0();
+            address token1 = IPool(pool).token1();
+            uint256 reserve0 = IERC20(token0).balanceOf(pool);
+            uint256 reserve1 = IERC20(token1).balanceOf(pool);
+            uint256 supply0 = IERC20(token0).totalSupply();
+            uint256 supply1 = IERC20(token1).totalSupply();
+            if (supply0 > 0 && reserve0 * 10_000 > _maxFloatBps * supply0) return false;
+            if (supply1 > 0 && reserve1 * 10_000 > _maxFloatBps * supply1) return false;
+        }
+
         return true;
     }
 }

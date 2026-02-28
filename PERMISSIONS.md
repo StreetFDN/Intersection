@@ -99,7 +99,7 @@ This is an exhaustive list of all admin permissions in the protocol, sorted by t
 - EpochGovernor
     - Can nudge the Minter to adjust the AERO emissions rate.
 
-#### [ProtocolGovernor](TODO: live etherscan link)
+#### ProtocolGovernor
 - Vetoer
     - Can set vetoer in ProtocolGovernor.
     - Can veto proposals.

@@ -46,4 +46,9 @@ contract OffRampKYCTest is Test {
         kyc.revokeKYC(user);
         assertFalse(kyc.kycApproved(user));
     }
+
+    function test_setCivicGateway_revertsOnZeroAddress() public {
+        vm.expectRevert(OffRampKYC.ZeroAddress.selector);
+        kyc.setCivicGateway(address(0));
+    }
 }

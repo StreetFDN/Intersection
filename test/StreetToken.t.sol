@@ -37,4 +37,20 @@ contract StreetTokenTest is BaseTest {
     function testMaxSupply() public {
         assertEq(token.MAX_SUPPLY(), 1_000_000_000e18);
     }
+
+    function testMintUpToMaxSupply() public {
+        token.mint(address(owner), token.MAX_SUPPLY());
+        assertEq(token.totalSupply(), token.MAX_SUPPLY());
+    }
+
+    function testCannotMintBeyondMaxSupply() public {
+        token.mint(address(owner), token.MAX_SUPPLY());
+        vm.expectRevert(IStreetToken.ExceedsMaxSupply.selector);
+        token.mint(address(owner), 1);
+    }
+
+    function testCannotMintSingleCallExceedingMaxSupply() public {
+        vm.expectRevert(IStreetToken.ExceedsMaxSupply.selector);
+        token.mint(address(owner), token.MAX_SUPPLY() + 1);
+    }
 }

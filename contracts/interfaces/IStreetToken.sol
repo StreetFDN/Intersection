@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IStreetToken is IERC20 {
     error NotMinter();
     error NotOwner();
+    error ExceedsMaxSupply();
 
     /// @notice Mint an amount of tokens to an account
     ///         Only callable by Minter.sol
