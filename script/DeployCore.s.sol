@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import "forge-std/StdJson.sol";
 import "../test/Base.sol";
+import {FounderControls} from "contracts/FounderControls.sol";
+import {OffRampKYC} from "contracts/OffRampKYC.sol";
 
 contract DeployCore is Base {
     using stdJson for string;
@@ -22,6 +24,9 @@ contract DeployCore is Base {
     address feeManager;
     address team;
     address emergencyCouncil;
+    address treasuryAddr;
+    FounderControls public founderControls;
+    OffRampKYC public offRampKYC;
 
     struct AirdropInfo {
         uint256 amount;
@@ -40,6 +45,7 @@ contract DeployCore is Base {
         team = abi.decode(vm.parseJson(jsonConstants, ".team"), (address));
         feeManager = abi.decode(vm.parseJson(jsonConstants, ".feeManager"), (address));
         emergencyCouncil = abi.decode(vm.parseJson(jsonConstants, ".emergencyCouncil"), (address));
+        treasuryAddr = abi.decode(vm.parseJson(jsonConstants, ".treasury"), (address));
     }
 
     function run() public {
@@ -62,10 +68,12 @@ contract DeployCore is Base {
         // start broadcasting transactions
         vm.startBroadcast(deployerAddress);
 
-        // deploy AERO
-        AERO = new Aero();
+        // deploy STREET
+        STREET = new StreetToken();
 
-        tokens.push(address(AERO));
+        tokens.push(address(STREET));
+
+        treasury = treasuryAddr;
     }
 
     function _deploySetupAfter() public {
@@ -85,11 +93,17 @@ contract DeployCore is Base {
         factory.setFeeManager(feeManager);
         factory.setVoter(address(voter));
 
+        // Deploy FounderControls and optional OffRampKYC
+        founderControls = new FounderControls();
+        founderControls.transferOwnership(team);
+        offRampKYC = new OffRampKYC();
+        offRampKYC.transferOwnership(team);
+
         // finish broadcasting transactions
         vm.stopBroadcast();
 
         // write to file
-        vm.writeJson(vm.serializeAddress("v2", "AERO", address(AERO)), path);
+        vm.writeJson(vm.serializeAddress("v2", "STREET", address(STREET)), path);
         vm.writeJson(vm.serializeAddress("v2", "VotingEscrow", address(escrow)), path);
         vm.writeJson(vm.serializeAddress("v2", "Forwarder", address(forwarder)), path);
         vm.writeJson(vm.serializeAddress("v2", "ArtProxy", address(artProxy)), path);
@@ -103,6 +117,8 @@ contract DeployCore is Base {
         vm.writeJson(vm.serializeAddress("v2", "ManagedRewardsFactory", address(managedRewardsFactory)), path);
         vm.writeJson(vm.serializeAddress("v2", "FactoryRegistry", address(factoryRegistry)), path);
         vm.writeJson(vm.serializeAddress("v2", "AirdropDistributor", address(airdrop)), path);
+        vm.writeJson(vm.serializeAddress("v2", "FounderControls", address(founderControls)), path);
+        vm.writeJson(vm.serializeAddress("v2", "OffRampKYC", address(offRampKYC)), path);
     }
 
     function _initializeMinter() public {

@@ -25,8 +25,8 @@ abstract contract BaseTest is Base, TestOwner {
 
     uint256 constant DURATION = 7 days;
     uint256 constant WEEK = 1 weeks;
-    /// @dev Use same value as in voting escrow
-    uint256 constant MAXTIME = 4 * 365 * 86400;
+    /// @dev Use same value as in VeStreet (2 years)
+    uint256 constant MAXTIME = 2 * 365 * 86400;
     uint256 constant MAX_BPS = 10_000;
     address constant ETHER = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -106,17 +106,18 @@ abstract contract BaseTest is Base, TestOwner {
         amounts[2] = TOKEN_10M;
         amounts[3] = TOKEN_10M;
         amounts[4] = TOKEN_10M;
-        mintToken(address(AERO), owners, amounts);
+        mintToken(address(STREET), owners, amounts);
         mintToken(address(LR), owners, amounts);
 
         tokens.push(address(USDC));
         tokens.push(address(FRAX));
         tokens.push(address(DAI));
-        tokens.push(address(AERO));
+        tokens.push(address(STREET));
         tokens.push(address(LR));
         tokens.push(address(WETH));
 
         allowedManager = address(owner);
+        treasury = address(owner);
     }
 
     function _testSetupAfter() public {
@@ -124,6 +125,8 @@ abstract contract BaseTest is Base, TestOwner {
         governor = new ProtocolGovernor(escrow);
         epochGovernor = new EpochGovernor(address(forwarder), escrow, address(minter));
         voter.setEpochGovernor(address(epochGovernor));
+        // StreetVoter: whitelist test contract to create gauges before transferring governor
+        voter.whitelistFounder(address(this), true);
         voter.setGovernor(address(governor));
 
         assertEq(factory.allPoolsLength(), 0);
@@ -227,7 +230,7 @@ abstract contract BaseTest is Base, TestOwner {
             WETH = IWETH(new MockWETH());
             FRAX = new MockERC20("FRAX", "FRAX", 18);
         }
-        AERO = new Aero();
+        STREET = new StreetToken();
         LR = new MockERC20("LR", "LR", 18);
     }
 
@@ -298,11 +301,11 @@ abstract contract BaseTest is Base, TestOwner {
 
     /// @dev Helper function to add rewards to gauge from voter
     function _addRewardToGauge(address _voter, address _gauge, uint256 _amount) internal {
-        deal(address(AERO), _voter, _amount);
+        deal(address(STREET), _voter, _amount);
         vm.startPrank(_voter);
         // do not overwrite approvals if already set
-        if (AERO.allowance(_voter, _gauge) < _amount) {
-            AERO.approve(_gauge, _amount);
+        if (STREET.allowance(_voter, _gauge) < _amount) {
+            STREET.approve(_gauge, _amount);
         }
         Gauge(_gauge).notifyRewardAmount(_amount);
         vm.stopPrank();

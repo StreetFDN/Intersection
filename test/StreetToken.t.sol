@@ -2,17 +2,18 @@
 pragma solidity 0.8.19;
 
 import "./BaseTest.sol";
+import {IStreetToken} from "contracts/interfaces/IStreetToken.sol";
 
-contract AeroTest is BaseTest {
-    Aero token;
+contract StreetTokenTest is BaseTest {
+    StreetToken token;
 
     function _setUp() public override {
-        token = new Aero();
+        token = new StreetToken();
     }
 
     function testCannotSetMinterIfNotMinter() public {
         vm.prank(address(owner2));
-        vm.expectRevert(IAero.NotMinter.selector);
+        vm.expectRevert(IStreetToken.NotMinter.selector);
         token.setMinter(address(owner3));
     }
 
@@ -24,7 +25,16 @@ contract AeroTest is BaseTest {
 
     function testCannotMintIfNotMinter() public {
         vm.prank(address(owner2));
-        vm.expectRevert(IAero.NotMinter.selector);
+        vm.expectRevert(IStreetToken.NotMinter.selector);
         token.mint(address(owner2), TOKEN_1);
+    }
+
+    function testNameAndSymbol() public {
+        assertEq(token.name(), "Street Protocol Token");
+        assertEq(token.symbol(), "STREET");
+    }
+
+    function testMaxSupply() public {
+        assertEq(token.MAX_SUPPLY(), 1_000_000_000e18);
     }
 }

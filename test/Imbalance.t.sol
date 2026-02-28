@@ -14,9 +14,9 @@ contract ImbalanceTest is BaseTest {
         mintStables();
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e25;
-        mintToken(address(AERO), owners, amounts);
+        mintToken(address(STREET), owners, amounts);
 
-        escrow = new VotingEscrow(address(forwarder), address(AERO), address(factoryRegistry));
+        escrow = new VeStreet(address(forwarder), address(STREET), address(factoryRegistry));
         VeArtProxy artProxy = new VeArtProxy(address(escrow));
         escrow.setArtProxy(address(artProxy));
     }
@@ -24,20 +24,20 @@ contract ImbalanceTest is BaseTest {
     function createLock() public {
         deployBaseCoins();
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME);
         vm.warp(1);
         assertGt(escrow.balanceOfNFT(1), 995063075414519385);
-        assertEq(AERO.balanceOf(address(escrow)), TOKEN_1);
+        assertEq(STREET.balanceOf(address(escrow)), TOKEN_1);
     }
 
     function votingEscrowMerge() public {
         createLock();
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME);
         assertGt(escrow.balanceOfNFT(2), 995063075414519385);
-        assertEq(AERO.balanceOf(address(escrow)), 2 * TOKEN_1);
+        assertEq(STREET.balanceOf(address(escrow)), 2 * TOKEN_1);
         escrow.merge(2, 1);
         assertGt(escrow.balanceOfNFT(1), 1990039602248405587);
         assertEq(escrow.balanceOfNFT(2), 0);
@@ -48,7 +48,7 @@ contract ImbalanceTest is BaseTest {
         deployFactories();
         factory.setFee(true, 1);
         factory.setFee(false, 1);
-        voter = new Voter(address(forwarder), address(escrow), address(factoryRegistry));
+        voter = new StreetVoter(address(forwarder), address(escrow), address(factoryRegistry));
         router = new Router(
             address(forwarder),
             address(factoryRegistry),
@@ -119,12 +119,12 @@ contract ImbalanceTest is BaseTest {
     function deployVoter() public {
         routerAddLiquidity();
 
-        voter = new Voter(address(forwarder), address(escrow), address(factoryRegistry));
+        voter = new StreetVoter(address(forwarder), address(escrow), address(factoryRegistry));
         address[] memory tokens = new address[](4);
         tokens[0] = address(USDC);
         tokens[1] = address(FRAX);
         tokens[2] = address(DAI);
-        tokens[3] = address(AERO);
+        tokens[3] = address(STREET);
         voter.initialize(tokens, address(owner));
 
         assertEq(voter.length(), 0);
@@ -133,7 +133,7 @@ contract ImbalanceTest is BaseTest {
     function deployPoolFactoryGauge() public {
         deployVoter();
 
-        AERO.approve(address(gaugeFactory), 5 * TOKEN_100K);
+        STREET.approve(address(gaugeFactory), 5 * TOKEN_100K);
         voter.createGauge(address(factory), address(pool3));
         assertFalse(voter.gauges(address(pool3)) == address(0));
 

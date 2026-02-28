@@ -52,7 +52,7 @@ contract VotingEscrowTest is BaseTest {
     function testCannotDepositForWithLockedNFT() public {
         skipAndRoll(1 hours);
         uint256 mTokenId = escrow.createManagedLockFor(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         voter.depositManaged(tokenId, mTokenId);
@@ -65,7 +65,7 @@ contract VotingEscrowTest is BaseTest {
     function testCannotDepositForWithManagedNFTIfNotDistributor() public {
         skipAndRoll(1 hours);
         uint256 mTokenId = escrow.createManagedLockFor(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         voter.depositManaged(tokenId, mTokenId);
 
@@ -78,36 +78,36 @@ contract VotingEscrowTest is BaseTest {
         uint256 reward = TOKEN_1;
         uint256 mTokenId = escrow.createManagedLockFor(address(owner2));
         LockedManagedReward lockedManagedReward = LockedManagedReward(escrow.managedToLocked(mTokenId));
-        assertEq(AERO.allowance(address(escrow), address(lockedManagedReward)), 0);
+        assertEq(STREET.allowance(address(escrow), address(lockedManagedReward)), 0);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         voter.depositManaged(tokenId, mTokenId);
-        deal(address(AERO), address(distributor), TOKEN_1);
+        deal(address(STREET), address(distributor), TOKEN_1);
 
-        uint256 pre = AERO.balanceOf(address(lockedManagedReward));
+        uint256 pre = STREET.balanceOf(address(lockedManagedReward));
         IVotingEscrow.LockedBalance memory preLocked = escrow.locked(mTokenId);
         vm.prank(address(distributor));
         vm.expectEmit(true, true, true, true, address(lockedManagedReward));
-        emit NotifyReward(address(escrow), address(AERO), 604800, reward);
+        emit NotifyReward(address(escrow), address(STREET), 604800, reward);
         vm.expectEmit(false, false, false, true, address(escrow));
         emit MetadataUpdate(mTokenId);
         escrow.depositFor(mTokenId, reward);
-        uint256 post = AERO.balanceOf(address(lockedManagedReward));
+        uint256 post = STREET.balanceOf(address(lockedManagedReward));
         IVotingEscrow.LockedBalance memory postLocked = escrow.locked(mTokenId);
 
         assertEq(uint256(uint128(postLocked.end)), uint256(uint128(preLocked.end)));
         assertEq(uint256(uint128(postLocked.amount)) - uint256(uint128(preLocked.amount)), reward);
         assertEq(post - pre, reward);
-        assertEq(AERO.allowance(address(escrow), address(lockedManagedReward)), 0);
+        assertEq(STREET.allowance(address(escrow), address(lockedManagedReward)), 0);
     }
 
     function testDepositFor() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         IVotingEscrow.LockedBalance memory preLocked = escrow.locked(tokenId);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         vm.expectEmit(false, false, false, true, address(escrow));
         emit MetadataUpdate(tokenId);
         escrow.depositFor(tokenId, TOKEN_1);
@@ -118,11 +118,11 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testIncreaseAmount() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         IVotingEscrow.LockedBalance memory preLocked = escrow.locked(tokenId);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         vm.expectEmit(false, false, false, true, address(escrow));
         emit MetadataUpdate(tokenId);
         escrow.increaseAmount(tokenId, TOKEN_1);
@@ -133,7 +133,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testIncreaseUnlockTime() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, 4 weeks);
 
         skip((1 weeks) / 2);
@@ -150,7 +150,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCreateLock() public {
-        AERO.approve(address(escrow), 1e25);
+        STREET.approve(address(escrow), 1e25);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
 
         // Balance should be zero before and 1 after creating the lock
@@ -170,31 +170,31 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCreateLockOutsideAllowedZones() public {
-        AERO.approve(address(escrow), 1e25);
+        STREET.approve(address(escrow), 1e25);
         vm.expectRevert(IVotingEscrow.LockDurationTooLong.selector);
         escrow.createLock(1e21, MAXTIME + 1 weeks);
     }
 
     function testIncreaseAmountWithNormalLock() public {
         // timestamp: 604801
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         skipAndRoll(1);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.increaseAmount(tokenId, TOKEN_1);
 
-        // check locked balance state is updated correctly
+        // check locked balance state is updated correctly (2-year max lock)
         IVotingEscrow.LockedBalance memory locked = escrow.locked(tokenId);
         assertEq(convert(locked.amount), TOKEN_1 * 2);
-        assertEq(locked.end, 126403200);
+        assertEq(locked.end, 63504000); // ((604801 + MAXTIME) / WEEK) * WEEK for 2-year MAXTIME
         assertEq(locked.isPermanent, false);
 
         // check user point updates correctly
         assertEq(escrow.userPointEpoch(tokenId), 2);
         IVotingEscrow.UserPoint memory userPoint = escrow.userPointHistory(tokenId, 2);
-        assertEq(convert(userPoint.bias), 1994520516124422418); // (TOKEN_1 * 2 / MAXTIME) * (126403200 - 604802)
-        assertEq(convert(userPoint.slope), 15854895991); // TOKEN_1 * 2 / MAXTIME
+        assertEq(convert(userPoint.bias), 1994520452704838454); // (TOKEN_1 * 2 / MAXTIME) * (locked.end - 604802)
+        assertEq(convert(userPoint.slope), 31709791983); // TOKEN_1 * 2 / MAXTIME (2-year)
         assertEq(userPoint.ts, 604802);
         assertEq(userPoint.blk, 2);
         assertEq(userPoint.permanent, 0);
@@ -202,23 +202,23 @@ contract VotingEscrowTest is BaseTest {
         // check global point updates correctly
         assertEq(escrow.epoch(), 2);
         IVotingEscrow.GlobalPoint memory globalPoint = escrow.pointHistory(2);
-        assertEq(convert(globalPoint.bias), 1994520516124422418);
-        assertEq(convert(globalPoint.slope), 15854895991);
+        assertEq(convert(globalPoint.bias), 1994520452704838454);
+        assertEq(convert(globalPoint.slope), 31709791983);
         assertEq(globalPoint.ts, 604802);
         assertEq(globalPoint.blk, 2);
         assertEq(globalPoint.permanentLockBalance, 0);
 
         assertEq(escrow.supply(), TOKEN_1 * 2);
-        assertEq(escrow.slopeChanges(126403200), -15854895991);
+        assertEq(escrow.slopeChanges(63504000), -31709791983); // 2 tokens
     }
 
     function testIncreaseAmountWithPermanentLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         skipAndRoll(1);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.increaseAmount(tokenId, TOKEN_1);
 
         // check locked balance state is updated correctly
@@ -259,11 +259,11 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testIncreaseAmountWithDelegatedPermanentLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
 
@@ -282,7 +282,7 @@ contract VotingEscrowTest is BaseTest {
         assertEq(escrow.balanceOfNFT(tokenId), TOKEN_1 * 1);
 
         skipAndRoll(1);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.increaseAmount(tokenId, TOKEN_1);
 
         // check locked balance state is updated correctly
@@ -303,8 +303,8 @@ contract VotingEscrowTest is BaseTest {
         // check global point updates correctly
         assertEq(escrow.epoch(), 2);
         IVotingEscrow.GlobalPoint memory globalPoint = escrow.pointHistory(2);
-        assertEq(convert(globalPoint.bias), 997260250071864015); // (TOKEN_1 / MAXTIME) * (126403200 - 604803)
-        assertEq(convert(globalPoint.slope), 7927447995); // TOKEN_1 / MAXTIME
+        assertEq(convert(globalPoint.bias), 997260226352419227); // (TOKEN_1 / MAXTIME) * (63504000 - 604803)
+        assertEq(convert(globalPoint.slope), 15854895991); // TOKEN_1 / MAXTIME
         assertEq(globalPoint.ts, 604803);
         assertEq(globalPoint.blk, 3);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 2);
@@ -327,14 +327,14 @@ contract VotingEscrowTest is BaseTest {
         assertEq(checkpoint.owner, address(owner2));
         assertEq(checkpoint.delegatedBalance, TOKEN_1 * 2);
         assertEq(checkpoint.delegatee, 0);
-        assertEq(escrow.getPastVotes(address(owner2), tokenId2, 604803), TOKEN_1 * 2 + 997260250071864015);
-        assertEq(escrow.balanceOfNFT(tokenId2), 997260250071864015);
-        assertEq(escrow.totalSupply(), TOKEN_1 * 2 + 997260250071864015);
+        assertEq(escrow.getPastVotes(address(owner2), tokenId2, 604803), TOKEN_1 * 2 + 997260226352419227);
+        assertEq(escrow.balanceOfNFT(tokenId2), 997260226352419227);
+        assertEq(escrow.totalSupply(), TOKEN_1 * 2 + 997260226352419227);
         assertEq(escrow.supply(), TOKEN_1 * 3);
     }
 
     function testCannotIncreaseUnlockTimeWithPermanentLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         skipAndRoll(1);
@@ -347,7 +347,7 @@ contract VotingEscrowTest is BaseTest {
         skip(1 hours);
         uint256 mTokenId = escrow.createManagedLockFor(address(owner2));
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         voter.depositManaged(tokenId, mTokenId);
@@ -358,7 +358,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testTransferFrom() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         skipAndRoll(1);
 
@@ -393,11 +393,11 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testTransferFromWithDelegatedFrom() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(1);
         vm.startPrank(address(owner3));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
         skipAndRoll(1);
@@ -426,7 +426,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testBurnFromApproved() public {
-        AERO.approve(address(escrow), 1e25);
+        STREET.approve(address(escrow), 1e25);
         uint256 tokenId = escrow.createLock(1e21, MAXTIME);
         skipAndRoll(MAXTIME + 1);
         escrow.approve(address(owner2), tokenId);
@@ -436,7 +436,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotWithdrawPermanentLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         skipAndRoll(1);
@@ -446,7 +446,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotWithdrawBeforeLockExpiry() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
         uint256 tokenId = escrow.createLock(TOKEN_1, lockDuration);
         skipAndRoll(1);
@@ -456,15 +456,15 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testWithdraw() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
         escrow.createLock(TOKEN_1, lockDuration);
-        uint256 preBalance = AERO.balanceOf(address(owner));
+        uint256 preBalance = STREET.balanceOf(address(owner));
 
         skipAndRoll(lockDuration);
         escrow.withdraw(1);
 
-        uint256 postBalance = AERO.balanceOf(address(owner));
+        uint256 postBalance = STREET.balanceOf(address(owner));
         assertEq(postBalance - preBalance, TOKEN_1);
         assertEq(escrow.ownerOf(1), address(0));
         assertEq(escrow.balanceOf(address(owner)), 0);
@@ -486,7 +486,7 @@ contract VotingEscrowTest is BaseTest {
         // tokenURI should not work for non-existent token ids
         vm.expectRevert(IVotingEscrow.NonExistentToken.selector);
         escrow.tokenURI(999);
-        AERO.approve(address(escrow), 1e25);
+        STREET.approve(address(escrow), 1e25);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
         escrow.createLock(1e25, lockDuration);
 
@@ -522,7 +522,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotMergeSameVeNFT() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectRevert(IVotingEscrow.SameNFT.selector);
@@ -530,11 +530,11 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotMergeFromVeNFTWithNoApprovalOrOwnership() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 ownerTokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 owner2TokenId = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
 
@@ -543,11 +543,11 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotMergeToVeNFTWithNoApprovalOrOwnership() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 ownerTokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 owner2TokenId = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
 
@@ -557,9 +557,9 @@ contract VotingEscrowTest is BaseTest {
 
     function testCannotMergeAlreadyVotedFromVeNFT() public {
         skip(1 hours);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
 
         skip(1);
@@ -578,11 +578,11 @@ contract VotingEscrowTest is BaseTest {
 
     function testMergeWithFromLockTimeGreaterThanToLockTime() public {
         // first veNFT max lock time (4yrs)
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         // second veNFT only 1 yr lock time
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, 365 days);
 
         uint256 aeroSupply = escrow.supply();
@@ -625,11 +625,11 @@ contract VotingEscrowTest is BaseTest {
 
     function testMergeWithToLockTimeGreaterThanFromLockTime() public {
         // first veNFT max lock time (4yrs)
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         // second veNFT only 1 yr lock time
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, 365 days);
 
         uint256 aeroSupply = escrow.supply();
@@ -672,9 +672,9 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testMergeWithPermanentTo() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
         uint256 tokenId2 = escrow.createLock(TOKEN_1 * 2, MAXTIME);
         escrow.lockPermanent(tokenId2);
 
@@ -721,17 +721,17 @@ contract VotingEscrowTest is BaseTest {
         assertEq(globalPoint.blk, 2);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 3);
 
-        assertEq(escrow.slopeChanges(126403200), 0);
+        assertEq(escrow.slopeChanges(63504000), 0);
         assertEq(escrow.permanentLockBalance(), TOKEN_1 * 3);
     }
 
     function testMergeWithDelegatedPermanentTo() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         uint256 tokenId2 = escrow.createLock(TOKEN_1 * 2, MAXTIME);
         escrow.lockPermanent(tokenId2);
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId3 = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
         escrow.delegate(tokenId2, tokenId3);
@@ -772,8 +772,8 @@ contract VotingEscrowTest is BaseTest {
 
         assertEq(escrow.epoch(), 2);
         IVotingEscrow.GlobalPoint memory globalPoint = escrow.pointHistory(2);
-        assertEq(convert(globalPoint.bias), 997260257999312010); // contribution from tokenId3
-        assertEq(convert(globalPoint.slope), 7927447995);
+        assertEq(convert(globalPoint.bias), 997260257999312018); // contribution from tokenId3
+        assertEq(convert(globalPoint.slope), 15854895991);
         assertEq(globalPoint.ts, 604802);
         assertEq(globalPoint.blk, 2);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 3);
@@ -808,16 +808,16 @@ contract VotingEscrowTest is BaseTest {
         assertEq(checkpoints.owner, address(owner2));
         assertEq(checkpoints.delegatedBalance, TOKEN_1 * 3);
         assertEq(checkpoints.delegatee, 0);
-        assertEq(escrow.getPastVotes(address(owner2), tokenId3, 604802), TOKEN_1 * 3 + 997260257999312010);
-        assertEq(escrow.balanceOfNFT(tokenId3), 997260257999312010);
+        assertEq(escrow.getPastVotes(address(owner2), tokenId3, 604802), TOKEN_1 * 3 + 997260257999312018);
+        assertEq(escrow.balanceOfNFT(tokenId3), 997260257999312018);
     }
 
     function testCannotMergeWithPermanantFrom() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectRevert(IVotingEscrow.PermanentLock.selector);
@@ -826,11 +826,11 @@ contract VotingEscrowTest is BaseTest {
 
     function testMergeWithExpiredFromVeNFT() public {
         // first veNFT max lock time (4yrs)
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         // second veNFT only 1 week lock time
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, 1 weeks);
 
         uint256 expectedLockTime = escrow.locked(tokenId).end;
@@ -876,11 +876,11 @@ contract VotingEscrowTest is BaseTest {
 
     function testCannotMergeWithExpiredToVeNFT() public {
         // first veNFT max lock time (4yrs)
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         // second veNFT only 1 week lock time
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, 1 weeks);
 
         // let second veNFT expire
@@ -898,11 +898,11 @@ contract VotingEscrowTest is BaseTest {
         bribeVotingReward.notifyRewardAmount(address(LR), TOKEN_1);
 
         // first veNFT max lock time (4yrs)
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         // second veNFT only 1 yr lock time
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, 365 days);
 
         uint256 expectedLockTime = escrow.locked(tokenId).end;
@@ -947,7 +947,7 @@ contract VotingEscrowTest is BaseTest {
 
     function testCannotSplitIfNoOwnerAfterSplit() public {
         escrow.toggleSplit(address(0), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.split(tokenId, TOKEN_1 / 2);
         vm.expectRevert(IVotingEscrow.SplitNoOwner.selector);
@@ -955,7 +955,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotSplitIfNoOwnerAfterWithdraw() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         skipAndRoll(MAXTIME + 1);
         escrow.withdraw(tokenId);
@@ -964,7 +964,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotSplitIfNoOwnerAfterMerge() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.merge(tokenId, tokenId2);
@@ -975,14 +975,14 @@ contract VotingEscrowTest is BaseTest {
     function testCannotSplitOverflow() public {
         escrow.toggleSplit(address(0), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId2 = escrow.createLock(1e6, MAXTIME);
         // Creates the create overflow amount
-        uint256 escrowBalance = AERO.balanceOf(address(escrow));
+        uint256 escrowBalance = STREET.balanceOf(address(escrow));
         uint256 overflowAmount = uint256(int256(int128(-(int256(escrowBalance)))));
         assertGt(overflowAmount, uint256(uint128(type(int128).max)));
 
@@ -1032,8 +1032,8 @@ contract VotingEscrowTest is BaseTest {
         skipAndRoll(1 hours);
         escrow.toggleSplit(address(0), true);
         uint256 mTokenId = escrow.createManagedLockFor(address(owner));
-        AERO.approve(address(escrow), type(uint256).max);
-        uint256 tokenId = escrow.createLock(TOKEN_1, 4 * 365 * 86400);
+        STREET.approve(address(escrow), type(uint256).max);
+        uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         voter.depositManaged(tokenId, mTokenId);
 
         vm.expectRevert(IVotingEscrow.NotNormalNFT.selector);
@@ -1042,7 +1042,7 @@ contract VotingEscrowTest is BaseTest {
 
     function testCannotSplitWithZeroAmount() public {
         escrow.toggleSplit(address(0), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 ownerTokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectRevert(IVotingEscrow.ZeroAmount.selector);
@@ -1051,7 +1051,7 @@ contract VotingEscrowTest is BaseTest {
 
     function testCannotSplitVeNFTWithNoApprovalOrOwnership() public {
         escrow.toggleSplit(address(0), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 ownerTokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectRevert(IVotingEscrow.NotApprovedOrOwner.selector);
@@ -1062,7 +1062,7 @@ contract VotingEscrowTest is BaseTest {
     function testCannotSplitWithExpiredVeNFT() public {
         escrow.toggleSplit(address(0), true);
         // create veNFT with one week locktime
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, 1 weeks);
 
         // let second veNFT expire
@@ -1075,7 +1075,7 @@ contract VotingEscrowTest is BaseTest {
     function testCannotSplitWithAlreadyVotedVeNFT() public {
         skip(1 hours);
         escrow.toggleSplit(address(0), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         skip(1);
@@ -1094,7 +1094,7 @@ contract VotingEscrowTest is BaseTest {
 
     function testCannotSplitWithAmountTooBig() public {
         escrow.toggleSplit(address(0), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectRevert(IVotingEscrow.AmountTooBig.selector);
@@ -1102,7 +1102,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotSplitIfNotPermissioned() public {
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectRevert(IVotingEscrow.SplitNotAllowed.selector);
@@ -1115,7 +1115,7 @@ contract VotingEscrowTest is BaseTest {
         escrow.toggleSplit(address(owner), true);
 
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.transferFrom(address(owner2), address(owner), tokenId);
         vm.stopPrank();
@@ -1129,7 +1129,7 @@ contract VotingEscrowTest is BaseTest {
 
         escrow.toggleSplit(address(owner), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.approve(address(owner2), tokenId);
         skipAndRoll(1);
@@ -1143,7 +1143,7 @@ contract VotingEscrowTest is BaseTest {
 
         escrow.toggleSplit(address(owner), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.transferFrom(address(owner), address(owner2), tokenId);
 
@@ -1157,11 +1157,11 @@ contract VotingEscrowTest is BaseTest {
         skip(1 weeks / 2);
 
         escrow.toggleSplit(address(owner), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME);
 
         vm.expectEmit(true, true, true, true, address(escrow));
-        emit Split(1, 2, 3, address(owner), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 127008000, 907201);
+        emit Split(1, 2, 3, address(owner), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 63504000, 907201);
         (uint256 splitTokenId1, uint256 splitTokenId2) = escrow.split(1, TOKEN_1 / 4);
         assertEq(escrow.ownerOf(splitTokenId1), address(owner));
         assertEq(escrow.ownerOf(splitTokenId2), address(owner));
@@ -1172,13 +1172,13 @@ contract VotingEscrowTest is BaseTest {
         skip(1 weeks / 2);
 
         escrow.toggleSplit(address(owner), true);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME);
         escrow.approve(address(owner2), 1);
 
         vm.prank(address(owner2));
         vm.expectEmit(true, true, true, true, address(escrow));
-        emit Split(1, 2, 3, address(owner2), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 127008000, 907201);
+        emit Split(1, 2, 3, address(owner2), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 63504000, 907201);
         (uint256 splitTokenId1, uint256 splitTokenId2) = escrow.split(1, TOKEN_1 / 4);
         assertEq(escrow.ownerOf(splitTokenId1), address(owner));
         assertEq(escrow.ownerOf(splitTokenId2), address(owner));
@@ -1189,7 +1189,7 @@ contract VotingEscrowTest is BaseTest {
         skip(1 weeks / 2); // timestamp: 907201
         escrow.toggleSplit(address(0), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         skipAndRoll(1);
@@ -1257,11 +1257,11 @@ contract VotingEscrowTest is BaseTest {
         skip(1 weeks / 2); // timestamp: 907201
         escrow.toggleSplit(address(0), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
         escrow.delegate(1, 2);
@@ -1316,8 +1316,8 @@ contract VotingEscrowTest is BaseTest {
         // check global point
         assertEq(escrow.epoch(), 2);
         IVotingEscrow.GlobalPoint memory globalPoint = escrow.pointHistory(2);
-        assertEq(convert(globalPoint.bias), 999657518273000010); // tokenId 2 contribution
-        assertEq(convert(globalPoint.slope), 7927447995);
+        assertEq(convert(globalPoint.bias), 992465721659636818); // tokenId 2 contribution
+        assertEq(convert(globalPoint.slope), 15854895991);
         assertEq(globalPoint.ts, 907202);
         assertEq(globalPoint.blk, 2);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1);
@@ -1364,7 +1364,7 @@ contract VotingEscrowTest is BaseTest {
 
         escrow.toggleSplit(address(owner), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
 
         // generate new nfts with same amounts / locktime
@@ -1374,7 +1374,7 @@ contract VotingEscrowTest is BaseTest {
         uint256 aeroSupply = escrow.supply();
 
         vm.expectEmit(true, true, true, true, address(escrow));
-        emit Split(1, 4, 5, address(owner), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 127008000, 907201);
+        emit Split(1, 4, 5, address(owner), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 63504000, 907201);
         (uint256 splitTokenId1, uint256 splitTokenId2) = escrow.split(1, TOKEN_1 / 4);
         assertEq(splitTokenId1, 4);
         assertEq(splitTokenId2, 5);
@@ -1433,7 +1433,7 @@ contract VotingEscrowTest is BaseTest {
 
         escrow.toggleSplit(address(0), true);
 
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
 
         // generate new nfts with same amounts / locktime
@@ -1443,7 +1443,7 @@ contract VotingEscrowTest is BaseTest {
         uint256 aeroSupply = escrow.supply();
 
         vm.expectEmit(true, true, true, true, address(escrow));
-        emit Split(1, 4, 5, address(owner), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 127008000, 907201);
+        emit Split(1, 4, 5, address(owner), (TOKEN_1 * 3) / 4, TOKEN_1 / 4, 63504000, 907201);
         (uint256 splitTokenId1, uint256 splitTokenId2) = escrow.split(1, TOKEN_1 / 4);
         assertEq(splitTokenId1, 4);
         assertEq(splitTokenId2, 5);
@@ -1498,7 +1498,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotLockPermanentIfNotApprovedOrOwner() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
 
         skipAndRoll(1);
@@ -1520,7 +1520,7 @@ contract VotingEscrowTest is BaseTest {
     function testCannotLockPermanentWithLockedNFT() public {
         skip(1 hours);
         uint256 mTokenId = escrow.createManagedLockFor(address(owner));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         voter.depositManaged(tokenId, mTokenId);
 
@@ -1531,7 +1531,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotLockPermanentWithExpiredLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, 4 weeks);
 
         skipAndRoll(4 weeks + 1);
@@ -1541,7 +1541,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotLockPermamentWithPermanentLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
 
@@ -1553,11 +1553,11 @@ contract VotingEscrowTest is BaseTest {
 
     function testLockPermanent() public {
         // timestamp: 604801
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
-        assertEq(escrow.locked(tokenId).end, 126403200);
+        assertEq(escrow.locked(tokenId).end, 63504000);
         assertEq(escrow.slopeChanges(0), 0);
-        assertEq(escrow.slopeChanges(126403200), -7927447995); // slope is negative after lock creation
+        assertEq(escrow.slopeChanges(63504000), -15854895991); // slope is negative after lock creation
 
         skipAndRoll(1);
 
@@ -1590,12 +1590,12 @@ contract VotingEscrowTest is BaseTest {
         assertEq(globalPoint.permanentLockBalance, TOKEN_1);
 
         assertEq(escrow.slopeChanges(0), 0);
-        assertEq(escrow.slopeChanges(126403200), 0); // no contribution to global slope
+        assertEq(escrow.slopeChanges(63504000), 0); // no contribution to global slope
         assertEq(escrow.permanentLockBalance(), TOKEN_1);
     }
 
     function testCannotUnlockPermanentIfNotApprovedOrOwner() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         skipAndRoll(1);
@@ -1606,7 +1606,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotUnlockPermanentIfNotPermanentlyLocked() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         skipAndRoll(1);
 
@@ -1625,7 +1625,7 @@ contract VotingEscrowTest is BaseTest {
     function testCannotUnlockPermanentIfLockedNFT() public {
         skip(1 hours);
         uint256 mTokenId = escrow.createManagedLockFor(address(owner));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         voter.depositManaged(tokenId, mTokenId);
         skipAndRoll(1);
@@ -1635,7 +1635,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotUnlockPermanentIfVoted() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         skipAndRoll(1 hours);
@@ -1654,15 +1654,15 @@ contract VotingEscrowTest is BaseTest {
 
     function testUnlockPermanent() public {
         // timestamp: 604801
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
-        assertEq(escrow.slopeChanges(126403200), -7927447995); // slope is negative after lock creation
+        assertEq(escrow.slopeChanges(63504000), -15854895991); // slope is negative after lock creation
         assertEq(escrow.numCheckpoints(tokenId), 1);
 
         skipAndRoll(1);
 
         escrow.lockPermanent(tokenId);
-        assertEq(escrow.slopeChanges(126403200), 0); // slope zero on permanent lock
+        assertEq(escrow.slopeChanges(63504000), 0); // slope zero on permanent lock
 
         skipAndRoll(1);
 
@@ -1673,13 +1673,13 @@ contract VotingEscrowTest is BaseTest {
         // check locked balance state is updated correctly
         IVotingEscrow.LockedBalance memory locked = escrow.locked(tokenId);
         assertEq(convert(locked.amount), TOKEN_1);
-        assertEq(locked.end, 126403200);
+        assertEq(locked.end, 63504000);
 
         // check user point updates correctly
         assertEq(escrow.userPointEpoch(tokenId), 3);
         IVotingEscrow.UserPoint memory userPoint = escrow.userPointHistory(tokenId, 3);
-        assertEq(convert(userPoint.bias), 997260250071864015); // (TOKEN_1 / MAXTIME) * (126403200 - 604803)
-        assertEq(convert(userPoint.slope), 7927447995); // TOKEN_1 / MAXTIME
+        assertEq(convert(userPoint.bias), 997260226352419227); // (TOKEN_1 / MAXTIME) * (63504000 - 604803)
+        assertEq(convert(userPoint.slope), 15854895991); // TOKEN_1 / MAXTIME
         assertEq(userPoint.ts, 604803);
         assertEq(userPoint.blk, 3);
         assertEq(userPoint.permanent, 0);
@@ -1687,31 +1687,31 @@ contract VotingEscrowTest is BaseTest {
         // check global point updates correctly
         assertEq(escrow.epoch(), 3);
         IVotingEscrow.GlobalPoint memory globalPoint = escrow.pointHistory(3);
-        assertEq(convert(globalPoint.bias), 997260250071864015);
-        assertEq(convert(globalPoint.slope), 7927447995);
+        assertEq(convert(globalPoint.bias), 997260226352419227);
+        assertEq(convert(globalPoint.slope), 15854895991);
         assertEq(globalPoint.ts, 604803);
         assertEq(globalPoint.blk, 3);
         assertEq(globalPoint.permanentLockBalance, 0);
 
-        assertEq(escrow.slopeChanges(126403200), -7927447995); // slope restored
+        assertEq(escrow.slopeChanges(63504000), -15854895991); // slope restored
         assertEq(escrow.permanentLockBalance(), 0);
         assertEq(escrow.numCheckpoints(tokenId), 1);
     }
 
     function testUnlockPermanentWithDelegate() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
-        assertEq(escrow.slopeChanges(126403200), -7927447995 * 2); // slope is negative after lock creation
+        assertEq(escrow.slopeChanges(63504000), -15854895991 * 2); // slope is negative after lock creation
 
         skipAndRoll(1);
 
         escrow.lockPermanent(tokenId);
         escrow.delegate(tokenId, tokenId2);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
 
         skipAndRoll(1);
 
@@ -1722,13 +1722,13 @@ contract VotingEscrowTest is BaseTest {
         // check locked balance state is updated correctly
         IVotingEscrow.LockedBalance memory locked = escrow.locked(tokenId);
         assertEq(convert(locked.amount), TOKEN_1);
-        assertEq(locked.end, 126403200);
+        assertEq(locked.end, 63504000);
 
         // check user point updates correctly
         assertEq(escrow.userPointEpoch(tokenId), 3);
         IVotingEscrow.UserPoint memory userPoint = escrow.userPointHistory(tokenId, 3);
-        assertEq(convert(userPoint.bias), 997260250071864015); // (TOKEN_1 / MAXTIME) * (126403200 - 604803)
-        assertEq(convert(userPoint.slope), 7927447995); // TOKEN_1 / MAXTIME
+        assertEq(convert(userPoint.bias), 997260226352419227); // (TOKEN_1 / MAXTIME) * (63504000 - 604803)
+        assertEq(convert(userPoint.slope), 15854895991); // TOKEN_1 / MAXTIME
         assertEq(userPoint.ts, 604803);
         assertEq(userPoint.blk, 3);
         assertEq(userPoint.permanent, 0);
@@ -1736,13 +1736,13 @@ contract VotingEscrowTest is BaseTest {
         // check global point updates correctly
         assertEq(escrow.epoch(), 3);
         IVotingEscrow.GlobalPoint memory globalPoint = escrow.pointHistory(3);
-        assertEq(convert(globalPoint.bias), 997260250071864015 * 2); // contribution from tokenId and tokenId2
-        assertEq(convert(globalPoint.slope), 7927447995 * 2);
+        assertEq(convert(globalPoint.bias), 997260226352419227 * 2); // contribution from tokenId and tokenId2
+        assertEq(convert(globalPoint.slope), 15854895991 * 2);
         assertEq(globalPoint.ts, 604803);
         assertEq(globalPoint.blk, 3);
         assertEq(globalPoint.permanentLockBalance, 0);
 
-        assertEq(escrow.slopeChanges(126403200), -7927447995 * 2);
+        assertEq(escrow.slopeChanges(63504000), -15854895991 * 2);
         assertEq(escrow.permanentLockBalance(), 0);
 
         // check tokenId dedelegates from tokenId2
@@ -1765,10 +1765,10 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotDelegateIfNotApprovedOrOwner() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -1779,10 +1779,10 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotDelegateIfNotPermanentLock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -1792,7 +1792,7 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotDelegateToNonExistentToken() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         skipAndRoll(1);
@@ -1802,12 +1802,12 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotDelegateToBurntToken() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
 
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, (1 weeks)); // 2
         vm.stopPrank();
 
@@ -1821,11 +1821,11 @@ contract VotingEscrowTest is BaseTest {
     }
 
     function testCannotDelegateIfTransferInSameBlock() public {
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -1839,15 +1839,15 @@ contract VotingEscrowTest is BaseTest {
 
     function testDelegate() public {
         // timestamp: 604801
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         vm.startPrank(address(owner3));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -1888,8 +1888,8 @@ contract VotingEscrowTest is BaseTest {
         assertEq(checkpoint.owner, address(owner2));
         assertEq(checkpoint.delegatedBalance, TOKEN_1);
         assertEq(checkpoint.delegatee, 0);
-        assertEq(escrow.getPastVotes(address(owner2), 2, 604802), TOKEN_1 + 997260257999312010);
-        assertEq(escrow.balanceOfNFT(2), 997260257999312010);
+        assertEq(escrow.getPastVotes(address(owner2), 2, 604802), TOKEN_1 + 997260257999312018);
+        assertEq(escrow.balanceOfNFT(2), 997260257999312018);
         skipAndRoll(1);
 
         // delegate 1 => 3
@@ -1928,8 +1928,8 @@ contract VotingEscrowTest is BaseTest {
         assertEq(checkpoint.owner, address(owner2));
         assertEq(checkpoint.delegatedBalance, 0);
         assertEq(checkpoint.delegatee, 0);
-        assertEq(escrow.getPastVotes(address(owner2), 2, 604803), 997260250071864015);
-        assertEq(escrow.balanceOfNFT(2), 997260250071864015);
+        assertEq(escrow.getPastVotes(address(owner2), 2, 604803), 997260226352419227);
+        assertEq(escrow.balanceOfNFT(2), 997260226352419227);
 
         // check prior and new checkpoint for tokenId 3
         // expect delegatedBalance 0 => TOKEN_1
@@ -1945,8 +1945,8 @@ contract VotingEscrowTest is BaseTest {
         assertEq(checkpoint.owner, address(owner3));
         assertEq(checkpoint.delegatedBalance, TOKEN_1);
         assertEq(checkpoint.delegatee, 0);
-        assertEq(escrow.getPastVotes(address(owner3), 3, 604803), TOKEN_1 + 997260250071864015);
-        assertEq(escrow.balanceOfNFT(3), 997260250071864015);
+        assertEq(escrow.getPastVotes(address(owner3), 3, 604803), TOKEN_1 + 997260226352419227);
+        assertEq(escrow.balanceOfNFT(3), 997260226352419227);
         skipAndRoll(1);
 
         // delegate 1 => 1
@@ -2013,12 +2013,12 @@ contract VotingEscrowTest is BaseTest {
         assertEq(escrow.getPastVotes(address(owner3), 3, 604801), 997260265926760005);
         // 1 => 2
         assertEq(escrow.getPastVotes(address(owner), 1, 604802), 0);
-        assertEq(escrow.getPastVotes(address(owner2), 2, 604802), 997260257999312010 + TOKEN_1);
-        assertEq(escrow.getPastVotes(address(owner3), 3, 604802), 997260257999312010);
+        assertEq(escrow.getPastVotes(address(owner2), 2, 604802), 997260257999312018 + TOKEN_1);
+        assertEq(escrow.getPastVotes(address(owner3), 3, 604802), 997260257999312018);
         // 1 => 3
         assertEq(escrow.getPastVotes(address(owner), 1, 604803), 0);
-        assertEq(escrow.getPastVotes(address(owner2), 2, 604803), 997260250071864015);
-        assertEq(escrow.getPastVotes(address(owner3), 3, 604803), 997260250071864015 + TOKEN_1);
+        assertEq(escrow.getPastVotes(address(owner2), 2, 604803), 997260226352419227);
+        assertEq(escrow.getPastVotes(address(owner3), 3, 604803), 997260226352419227 + TOKEN_1);
         // 1 => 1 / 0
         assertEq(escrow.getPastVotes(address(owner), 1, 604804), TOKEN_1);
         assertEq(escrow.getPastVotes(address(owner2), 2, 604804), 997260242144416020);
@@ -2029,15 +2029,15 @@ contract VotingEscrowTest is BaseTest {
         // timestamp: 604801
         uint256 alicePrivateKey = 0xA11CE;
         address alice = vm.addr(alicePrivateKey);
-        deal(address(AERO), alice, TOKEN_100K);
+        deal(address(STREET), alice, TOKEN_100K);
 
         vm.startPrank(alice);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.stopPrank();
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -2059,15 +2059,15 @@ contract VotingEscrowTest is BaseTest {
         // timestamp: 604801
         uint256 alicePrivateKey = 0xA11CE;
         address alice = vm.addr(alicePrivateKey);
-        deal(address(AERO), alice, TOKEN_100K);
+        deal(address(STREET), alice, TOKEN_100K);
 
         vm.startPrank(alice);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.stopPrank();
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -2089,15 +2089,15 @@ contract VotingEscrowTest is BaseTest {
         // timestamp: 604801
         uint256 alicePrivateKey = 0xA11CE;
         address alice = vm.addr(alicePrivateKey);
-        deal(address(AERO), alice, TOKEN_100K);
+        deal(address(STREET), alice, TOKEN_100K);
 
         vm.startPrank(alice);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.stopPrank();
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -2120,15 +2120,15 @@ contract VotingEscrowTest is BaseTest {
         // timestamp: 604801
         uint256 alicePrivateKey = 0xA11CE;
         address alice = vm.addr(alicePrivateKey);
-        deal(address(AERO), alice, TOKEN_100K);
+        deal(address(STREET), alice, TOKEN_100K);
 
         vm.startPrank(alice);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
         escrow.lockPermanent(1);
         vm.stopPrank();
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
         skipAndRoll(1);
@@ -2154,7 +2154,7 @@ contract VotingEscrowTest is BaseTest {
         vm.warp(1600000000);
         timestamp = bound(timestamp, 1600000000, 1600000000 + (52 weeks) * 100);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         vm.warp(timestamp);
@@ -2166,7 +2166,7 @@ contract VotingEscrowTest is BaseTest {
         vm.warp(1600000000);
         timestamp = bound(timestamp, 1600000000, 1600000000 + (52 weeks) * 100);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         vm.warp(timestamp);
@@ -2178,7 +2178,7 @@ contract VotingEscrowTest is BaseTest {
         vm.warp(1600000000);
         timestamp = bound(timestamp, 1600000001, 1600000000 + (52 weeks) * 100);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         vm.warp(timestamp);
@@ -2193,7 +2193,7 @@ contract VotingEscrowTest is BaseTest {
         vm.warp(1600000000);
         timestamp = bound(timestamp, 1600000001, 1600000000 + (52 weeks) * 100);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         vm.warp(timestamp);
@@ -2207,9 +2207,9 @@ contract VotingEscrowTest is BaseTest {
         vm.warp(1600000000);
         timestamp = bound(timestamp, 1600000000, 1600000000 + (52 weeks) * 100);
 
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
-        AERO.approve(address(escrow), TOKEN_1);
+        STREET.approve(address(escrow), TOKEN_1);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         vm.warp(timestamp);

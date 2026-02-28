@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/StdJson.sol";
 import "../test/Base.sol";
+import {IVoter} from "../contracts/interfaces/IVoter.sol";
 
 /// @notice Deploy script to deploy new pools and gauges
 contract DeployGaugesAndPools is Script {
@@ -16,8 +17,8 @@ contract DeployGaugesAndPools is Script {
     string public jsonOutput;
 
     PoolFactory public factory;
-    Voter public voter;
-    address public AERO;
+    IVoter public voter;
+    address public STREET;
 
     struct PoolNonAero {
         bool stable;
@@ -49,8 +50,8 @@ contract DeployGaugesAndPools is Script {
         path = string.concat(path, outputFilename);
         jsonOutput = vm.readFile(path);
         factory = PoolFactory(abi.decode(jsonOutput.parseRaw(".PoolFactory"), (address)));
-        voter = Voter(abi.decode(jsonOutput.parseRaw(".Voter"), (address)));
-        AERO = abi.decode(jsonOutput.parseRaw(".AERO"), (address));
+        voter = IVoter(abi.decode(jsonOutput.parseRaw(".Voter"), (address)));
+        STREET = abi.decode(jsonOutput.parseRaw(".STREET"), (address));
 
         vm.startBroadcast(deployerAddress);
 
@@ -65,7 +66,7 @@ contract DeployGaugesAndPools is Script {
 
         // Deploy all AERO pools & gauges
         for (uint256 i = 0; i < poolsAero.length; i++) {
-            address newPool = factory.createPool(AERO, poolsAero[i].token, poolsAero[i].stable);
+            address newPool = factory.createPool(STREET, poolsAero[i].token, poolsAero[i].stable);
             address newGauge = voter.createGauge(address(factory), newPool);
 
             pools.push(newPool);

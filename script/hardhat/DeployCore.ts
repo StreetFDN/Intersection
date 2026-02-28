@@ -5,21 +5,23 @@ import { Libraries } from "hardhat/types";
 import { BigNumber } from "ethers";
 import {
   ManagedRewardsFactory,
-  VotingRewardsFactory,
+  StreetVotingRewardsFactory,
   GaugeFactory,
   PoolFactory,
   FactoryRegistry,
   Pool,
-  Minter,
+  StreetMinter,
   RewardsDistributor,
   AirdropDistributor,
   Router,
-  Aero,
-  Voter,
+  StreetToken,
+  StreetVoter,
   VeArtProxy,
-  VotingEscrow,
+  VeStreet,
   IERC20,
   ProtocolForwarder,
+  FounderControls,
+  OffRampKYC,
 } from "../../artifacts/types";
 import jsonConstants from "../constants/Base.json";
 
@@ -34,10 +36,12 @@ interface ProtocolOutput {
   Minter: string;
   PoolFactory: string;
   Router: string;
-  AERO: string;
+  STREET: string;
   Voter: string;
   VotingEscrow: string;
   VotingRewardsFactory: string;
+  FounderControls: string;
+  OffRampKYC: string;
 }
 
 interface AirdropInfo {
@@ -51,8 +55,11 @@ async function main() {
   const AIRDROPPER_BALANCE = 200_000_000;
   const DECIMAL = BigNumber.from(10).pow(18);
 
-  const AERO = await deploy<Aero>("Aero");
-  jsonConstants.whitelistTokens.push(AERO.address);
+  const treasury =
+    (jsonConstants as { treasury?: string }).treasury ||
+    jsonConstants.team;
+  const STREET = await deploy<StreetToken>("StreetToken");
+  jsonConstants.whitelistTokens.push(STREET.address);
   // ====== end _deploySetupBefore() ======
 
   // ====== start _coreSetup() ======
@@ -68,8 +75,10 @@ async function main() {
   await poolFactory.setFee(true, 1);
   await poolFactory.setFee(false, 1);
 
-  const votingRewardsFactory = await deploy<VotingRewardsFactory>(
-    "VotingRewardsFactory"
+  const votingRewardsFactory = await deploy<StreetVotingRewardsFactory>(
+    "StreetVotingRewardsFactory",
+    undefined,
+    treasury
   );
 
   const gaugeFactory = await deploy<GaugeFactory>("GaugeFactory");
@@ -97,11 +106,11 @@ async function main() {
     DelegationLogicLibrary: delegationLogicLibrary.address,
   };
 
-  const escrow = await deploy<VotingEscrow>(
-    "VotingEscrow",
+  const escrow = await deploy<VeStreet>(
+    "VeStreet",
     libraries,
     forwarder.address,
-    AERO.address,
+    STREET.address,
     factoryRegistry.address
   );
 
@@ -125,8 +134,8 @@ async function main() {
     escrow.address
   );
 
-  const voter = await deploy<Voter>(
-    "Voter",
+  const voter = await deploy<StreetVoter>(
+    "StreetVoter",
     undefined,
     forwarder.address,
     escrow.address,
@@ -145,15 +154,15 @@ async function main() {
     jsonConstants.WETH
   );
 
-  const minter = await deploy<Minter>(
-    "Minter",
+  const minter = await deploy<StreetMinter>(
+    "StreetMinter",
     undefined,
     voter.address,
     escrow.address,
     distributor.address
   );
   await distributor.setMinter(minter.address);
-  await AERO.setMinter(minter.address);
+  await STREET.setMinter(minter.address);
 
   const airdrop = await deploy<AirdropDistributor>(
     "AirdropDistributor",
@@ -208,6 +217,11 @@ async function main() {
   await poolFactory.setFeeManager(jsonConstants.feeManager);
   await poolFactory.setVoter(voter.address);
 
+  const founderControls = await deploy<FounderControls>("FounderControls");
+  await founderControls.transferOwnership(jsonConstants.team);
+  const offRampKYC = await deploy<OffRampKYC>("OffRampKYC");
+  await offRampKYC.transferOwnership(jsonConstants.team);
+
   // ====== end _deploySetupAfter() ======
 
   const outputDirectory = "script/constants/output";
@@ -228,10 +242,12 @@ async function main() {
     Minter: minter.address,
     PoolFactory: poolFactory.address,
     Router: router.address,
-    AERO: AERO.address,
+    STREET: STREET.address,
     Voter: voter.address,
     VotingEscrow: escrow.address,
     VotingRewardsFactory: votingRewardsFactory.address,
+    FounderControls: founderControls.address,
+    OffRampKYC: offRampKYC.address,
   };
 
   try {

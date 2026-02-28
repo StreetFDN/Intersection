@@ -13,7 +13,7 @@ contract BribeVotingReward is VotingReward {
     ) VotingReward(_forwarder, _voter, _rewards) {}
 
     /// @inheritdoc VotingReward
-    function notifyRewardAmount(address token, uint256 amount) external override nonReentrant {
+    function notifyRewardAmount(address token, uint256 amount) external virtual override nonReentrant {
         address sender = _msgSender();
 
         if (!isReward[token]) {

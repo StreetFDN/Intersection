@@ -77,6 +77,12 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
     mapping(uint256 => bool) public isWhitelistedNFT;
     /// @inheritdoc IVoter
     mapping(address => bool) public isAlive;
+    /// @inheritdoc IVoter
+    mapping(address => bool) public whitelistedFounders;
+    /// @inheritdoc IVoter
+    mapping(address => address) public poolFounder;
+    /// @inheritdoc IVoter
+    mapping(address => bool) public pausedGauges;
     /// @dev Accumulated distributions per vote
     uint256 internal index;
     /// @dev Gauge => Accumulated gauge distributions
@@ -317,8 +323,20 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
     }
 
     /// @inheritdoc IVoter
-    function createGauge(address _poolFactory, address _pool) external nonReentrant returns (address) {
-        address sender = _msgSender();
+    function createGauge(address _poolFactory, address _pool) external virtual nonReentrant returns (address) {
+        return _createGauge(_poolFactory, _pool, _msgSender());
+    }
+
+    /// @dev Override in StreetVoter to enforce founder whitelist.
+    function _requireCanCreateGauge(address sender, bool isPool, address token0, address token1) internal virtual {
+        if (sender != governor) {
+            if (!isPool) revert NotAPool();
+            if (!isWhitelistedToken[token0] || !isWhitelistedToken[token1]) revert NotWhitelistedToken();
+        }
+    }
+
+    /// @dev Internal gauge creation logic (shared for Voter / StreetVoter).
+    function _createGauge(address _poolFactory, address _pool, address sender) internal returns (address) {
         if (!IFactoryRegistry(factoryRegistry).isPoolFactoryApproved(_poolFactory)) revert FactoryPathNotApproved();
         if (gauges[_pool] != address(0)) revert GaugeExists();
 
@@ -327,22 +345,15 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
         );
         address[] memory rewards = new address[](2);
         bool isPool = IPoolFactory(_poolFactory).isPool(_pool);
-        {
-            // stack too deep
-            address token0;
-            address token1;
-            if (isPool) {
-                token0 = IPool(_pool).token0();
-                token1 = IPool(_pool).token1();
-                rewards[0] = token0;
-                rewards[1] = token1;
-            }
-
-            if (sender != governor) {
-                if (!isPool) revert NotAPool();
-                if (!isWhitelistedToken[token0] || !isWhitelistedToken[token1]) revert NotWhitelistedToken();
-            }
+        address token0;
+        address token1;
+        if (isPool) {
+            token0 = IPool(_pool).token0();
+            token1 = IPool(_pool).token1();
+            rewards[0] = token0;
+            rewards[1] = token1;
         }
+        _requireCanCreateGauge(sender, isPool, token0, token1);
 
         (address _feeVotingReward, address _bribeVotingReward) = IVotingRewardsFactory(votingRewardsFactory)
             .createRewards(forwarder, rewards);
@@ -359,6 +370,7 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
         gaugeToBribe[_gauge] = _bribeVotingReward;
         gauges[_pool] = _gauge;
         poolForGauge[_gauge] = _pool;
+        poolFounder[_pool] = sender;
         isGauge[_gauge] = true;
         isAlive[_gauge] = true;
         _updateFor(_gauge);
@@ -397,6 +409,22 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
         if (isAlive[_gauge]) revert GaugeAlreadyRevived();
         isAlive[_gauge] = true;
         emit GaugeRevived(_gauge);
+    }
+
+    /// @inheritdoc IVoter
+    function whitelistFounder(address _founder, bool _status) external {
+        if (_msgSender() != governor) revert NotGovernor();
+        whitelistedFounders[_founder] = _status;
+    }
+
+    /// @inheritdoc IVoter
+    function pauseGauge(address _gauge, bool _status) external {
+        address _pool = IGauge(_gauge).stakingToken();
+        address _sender = _msgSender();
+        if (_sender != governor && poolFounder[_pool] != _sender) revert NotAuthorized();
+        if (!isGauge[_gauge]) revert GaugeDoesNotExist(_pool);
+        pausedGauges[_gauge] = _status;
+        emit GaugePaused(_gauge, _status);
     }
 
     /// @inheritdoc IVoter
@@ -499,7 +527,9 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
     function distribute(uint256 _start, uint256 _finish) external nonReentrant {
         IMinter(minter).updatePeriod();
         for (uint256 x = _start; x < _finish; x++) {
-            _distribute(gauges[pools[x]]);
+            address _gauge = gauges[pools[x]];
+            if (pausedGauges[_gauge]) continue;
+            _distribute(_gauge);
         }
     }
 
@@ -508,6 +538,7 @@ contract Voter is IVoter, ERC2771Context, ReentrancyGuard {
         IMinter(minter).updatePeriod();
         uint256 _length = _gauges.length;
         for (uint256 x = 0; x < _length; x++) {
+            if (pausedGauges[_gauges[x]]) continue;
             _distribute(_gauges[x]);
         }
     }

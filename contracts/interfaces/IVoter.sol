@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 interface IVoter {
     error AlreadyVotedOrDeposited();
@@ -20,6 +20,8 @@ interface IVoter {
     error NotMinter();
     error NotWhitelistedNFT();
     error NotWhitelistedToken();
+    error NotWhitelisted();
+    error NotAuthorized();
     error SameValue();
     error SpecialVotingWindow();
     error TooManyPools();
@@ -39,6 +41,7 @@ interface IVoter {
     );
     event GaugeKilled(address indexed gauge);
     event GaugeRevived(address indexed gauge);
+    event GaugePaused(address indexed gauge, bool status);
     event Voted(
         address indexed voter,
         address indexed pool,
@@ -123,6 +126,15 @@ interface IVoter {
 
     /// @dev Gauge => Liveness status
     function isAlive(address gauge) external view returns (bool);
+
+    /// @dev Founder => Whitelisted for gauge creation (StreetVoter)
+    function whitelistedFounders(address founder) external view returns (bool);
+
+    /// @dev Pool => Founder address that created the gauge (StreetVoter)
+    function poolFounder(address pool) external view returns (address);
+
+    /// @dev Gauge => Paused (skip distribution) (StreetVoter)
+    function pausedGauges(address gauge) external view returns (bool);
 
     /// @dev Gauge => Amount claimable
     function claimable(address gauge) external view returns (uint256);
@@ -234,7 +246,15 @@ interface IVoter {
     /// @param _bool .
     function whitelistNFT(uint256 _tokenId, bool _bool) external;
 
-    /// @notice Create a new gauge (unpermissioned).
+    /// @notice Whitelist founder for gauge creation (StreetVoter).
+    /// @dev Throws if not called by governor.
+    function whitelistFounder(address founder, bool status) external;
+
+    /// @notice Pause or unpause a gauge; paused gauges skip emission distribution (StreetVoter).
+    /// @dev Only pool founder or governor. Throws if not authorized.
+    function pauseGauge(address gauge, bool status) external;
+
+    /// @notice Create a new gauge (unpermissioned in Voter; whitelisted in StreetVoter).
     /// @dev Governor can create a new gauge for a pool with any address.
     /// @param _poolFactory .
     /// @param _pool .

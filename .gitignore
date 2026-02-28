@@ -16,4 +16,4 @@ deployments/
 artifacts/
 
 # Coverage
-lcov.info
+lcov.info.DS_Store

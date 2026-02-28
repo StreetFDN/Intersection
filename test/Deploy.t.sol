@@ -92,7 +92,7 @@ contract TestDeploy is BaseTest {
             address token = _tokens[i];
             assertTrue(deployCore.voter().isWhitelistedToken(token));
         }
-        assertTrue(deployCore.voter().isWhitelistedToken(address(deployCore.AERO())));
+        assertTrue(deployCore.voter().isWhitelistedToken(address(deployCore.STREET())));
 
         assertTrue(address(deployCore.WETH()) == address(WETH));
 
@@ -123,7 +123,7 @@ contract TestDeploy is BaseTest {
         // Ensures Liquid Tokens were minted correctly
         uint256 len = liquidWallets.length;
         for (uint256 i = 0; i < len; i++) {
-            assertEq(deployCore.AERO().balanceOf(liquidWallets[i]), liquidAmounts[i]);
+            assertEq(deployCore.STREET().balanceOf(liquidWallets[i]), liquidAmounts[i]);
         }
 
         // Ensures permanently locked NFTs were distributed correctly
@@ -149,10 +149,10 @@ contract TestDeploy is BaseTest {
         assertEq(deployCore.router().voter(), address(deployCore.voter()));
         assertEq(address(deployCore.router().weth()), address(WETH));
         assertEq(deployCore.distributor().minter(), address(deployCore.minter()));
-        assertEq(deployCore.AERO().minter(), address(deployCore.minter()));
+        assertEq(deployCore.STREET().minter(), address(deployCore.minter()));
 
         assertEq(deployCore.voter().minter(), address(deployCore.minter()));
-        assertEq(address(deployCore.minter().aero()), address(deployCore.AERO()));
+        assertEq(address(deployCore.minter().streetToken()), address(deployCore.STREET()));
         assertEq(address(deployCore.minter().voter()), address(deployCore.voter()));
         assertEq(address(deployCore.minter().ve()), address(deployCore.escrow()));
         assertEq(address(deployCore.minter().rewardsDistributor()), address(deployCore.distributor()));
@@ -184,7 +184,7 @@ contract TestDeploy is BaseTest {
         PoolAero[] memory poolsAero = abi.decode(jsonConstants.parseRaw(".poolsAero"), (PoolAero[]));
         for (uint256 i = 0; i < poolsAero.length; i++) {
             PoolAero memory p = poolsAero[i];
-            address poolAddr = deployCore.factory().getPool(address(deployCore.AERO()), p.token, p.stable);
+            address poolAddr = deployCore.factory().getPool(address(deployCore.STREET()), p.token, p.stable);
             assertTrue(poolAddr != address(0));
             address gaugeAddr = deployCore.voter().gauges(poolAddr);
             assertTrue(gaugeAddr != address(0));
@@ -197,8 +197,8 @@ contract TestDeploy is BaseTest {
         assertEq(airdrop.owner(), deployCore.minter().team());
         assertEq(address(airdrop), address(deployCore.airdrop()));
         assertEq(address(airdrop.ve()), address(deployCore.escrow()));
-        assertEq(address(airdrop.aero()), address(deployCore.AERO()));
-        assertEq(airdrop.aero().balanceOf(address(airdrop)), deployCore.AIRDROPPER_BALANCE());
+        assertEq(address(airdrop.streetToken()), address(deployCore.STREET()));
+        assertEq(airdrop.streetToken().balanceOf(address(airdrop)), deployCore.AIRDROPPER_BALANCE());
         assertEq(deployCore.escrow().balanceOf(address(airdrop)), 0);
 
         stdstore.target(address(distributeAirdrops)).sig("WALLET_BATCH_SIZE()").checked_write(2);

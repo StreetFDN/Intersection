@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import {IAero} from "./IAero.sol";
+import {IStreetToken} from "./IStreetToken.sol";
 import {IVotingEscrow} from "./IVotingEscrow.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -11,8 +11,8 @@ interface IAirdropDistributor {
 
     event Airdrop(address indexed _wallet, uint256 _amount, uint256 _tokenId);
 
-    /// @notice Interface of Aero.sol
-    function aero() external view returns (IAero);
+    /// @notice Interface of StreetToken.sol
+    function streetToken() external view returns (IStreetToken);
 
     /// @notice Interface of IVotingEscrow.sol
     function ve() external view returns (IVotingEscrow);

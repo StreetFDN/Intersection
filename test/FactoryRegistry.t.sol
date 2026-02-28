@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./BaseTest.sol";
+import {VotingRewardsFactory} from "contracts/factories/VotingRewardsFactory.sol";
 
 /// @dev Tests factory registry functionality.
 contract FactoryRegistryTest is BaseTest {
@@ -260,7 +261,7 @@ contract FactoryRegistryTest is BaseTest {
         // gauge validation
         assertEq(address(newPool2), Gauge(newGauge).stakingToken());
         assertEq(newFeesVotingReward, Gauge(newGauge).feesVotingReward());
-        assertEq(address(AERO), Gauge(newGauge).rewardToken());
+        assertEq(address(STREET), Gauge(newGauge).rewardToken());
         assertEq(address(voter), Gauge(newGauge).voter());
         assertTrue(Gauge(newGauge).isPool());
 
@@ -299,7 +300,7 @@ contract FactoryRegistryTest is BaseTest {
         // gauge validation
         assertEq(address(newPool2), Gauge(newGauge).stakingToken());
         assertEq(newFeesVotingReward, Gauge(newGauge).feesVotingReward());
-        assertEq(address(AERO), Gauge(newGauge).rewardToken());
+        assertEq(address(STREET), Gauge(newGauge).rewardToken());
         assertEq(address(voter), Gauge(newGauge).voter());
         assertTrue(Gauge(newGauge).isPool());
 
@@ -338,7 +339,7 @@ contract FactoryRegistryTest is BaseTest {
         // gauge validation
         assertEq(address(newPool2), Gauge(newGauge).stakingToken());
         assertEq(newFeesVotingReward, Gauge(newGauge).feesVotingReward());
-        assertEq(address(AERO), Gauge(newGauge).rewardToken());
+        assertEq(address(STREET), Gauge(newGauge).rewardToken());
         assertEq(address(voter), Gauge(newGauge).voter());
         assertTrue(Gauge(newGauge).isPool());
 

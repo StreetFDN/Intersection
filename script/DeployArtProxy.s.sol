@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import {IVotingEscrow, VotingEscrow} from "contracts/VotingEscrow.sol";
-import {VeArtProxy} from "contracts/VeArtProxy.sol";
-
+import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
+import {IVotingEscrow} from "contracts/interfaces/IVotingEscrow.sol";
+import {VeArtProxy} from "contracts/VeArtProxy.sol";
 import "../test/Base.sol";
 
 /// @notice Script to deploy the ArtProxy contract

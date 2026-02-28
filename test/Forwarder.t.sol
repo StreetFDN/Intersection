@@ -16,14 +16,14 @@ contract ForwarderTest is BaseTest {
     function _setUp() public override {
         erc2771Helper = new ERC2771Helper();
 
-        // fund forwarder with ETH for txs and fund from with AERO
+        // fund forwarder with ETH for txs and fund from with STREET
         vm.deal(address(forwarder), 1e18);
-        deal(address(AERO), sender, TOKEN_100K, true);
+        deal(address(STREET), sender, TOKEN_100K, true);
 
-        // Approve owner and sender transfers of AERO
-        AERO.approve(address(escrow), type(uint256).max);
+        // Approve owner and sender transfers of STREET
+        STREET.approve(address(escrow), type(uint256).max);
         vm.prank(sender);
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
     }
 
     function testForwarderCreateLock() public {

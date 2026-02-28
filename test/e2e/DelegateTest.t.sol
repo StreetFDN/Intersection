@@ -20,27 +20,27 @@ contract DelegateTest is ExtendedBaseTest {
         // user points:         1 | 0 | 0 | 0 | 0
         // voting checkpoints:  1 | 0 | 0 | 0 | 0
         // global point epoch:  1
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 1
 
         locked = escrow.locked(1);
         assertEq(convert(locked.amount), TOKEN_1);
-        assertEq(locked.end, 126403200);
+        assertEq(locked.end, 63504000);
         assertEq(locked.isPermanent, false);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
 
         assertEq(escrow.userPointEpoch(1), 1);
         userPoint = escrow.userPointHistory(1, 1);
-        assertEq(userPoint.bias, 997260265926760005); // (TOKEN_1 / MAXTIME) * (126403200 - 604801)
-        assertEq(userPoint.slope, 7927447995); // TOKEN_1 / MAXTIME
+        assertEq(userPoint.bias, 997260265926760005); // (TOKEN_1 / MAXTIME) * (63504000 - 604801)
+        assertEq(userPoint.slope, 15854895991); // TOKEN_1 / MAXTIME
         assertEq(userPoint.ts, 604801);
         assertEq(userPoint.blk, 1);
         assertEq(userPoint.permanent, 0);
 
         assertEq(escrow.epoch(), 1);
         globalPoint = escrow.pointHistory(1);
-        assertEq(globalPoint.bias, 997260265926760005); // (TOKEN_1 / MAXTIME) * (126403200 - 604801)
-        assertEq(globalPoint.slope, 7927447995); // TOKEN_1 / MAXTIME
+        assertEq(globalPoint.bias, 997260265926760005); // (TOKEN_1 / MAXTIME) * (63504000 - 604801)
+        assertEq(globalPoint.slope, 15854895991); // TOKEN_1 / MAXTIME
         assertEq(globalPoint.ts, 604801);
         assertEq(globalPoint.blk, 1);
         assertEq(globalPoint.permanentLockBalance, 0);
@@ -64,20 +64,20 @@ contract DelegateTest is ExtendedBaseTest {
         // voting checkpoints:  1 | 1 | 0 | 0 | 0
         // global point epoch:  1
         vm.startPrank(address(owner2));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 2
         vm.stopPrank();
 
         locked = escrow.locked(2);
         assertEq(convert(locked.amount), TOKEN_1);
-        assertEq(locked.end, 126403200);
+        assertEq(locked.end, 63504000);
         assertEq(locked.isPermanent, false);
-        assertEq(escrow.slopeChanges(126403200), -7927447995 * 2);
+        assertEq(escrow.slopeChanges(63504000), -15854895991 * 2);
 
         assertEq(escrow.userPointEpoch(2), 1);
         userPoint = escrow.userPointHistory(2, 1);
         assertEq(userPoint.bias, 997260265926760005);
-        assertEq(userPoint.slope, 7927447995);
+        assertEq(userPoint.slope, 15854895991);
         assertEq(userPoint.ts, 604801);
         assertEq(userPoint.blk, 1);
         assertEq(userPoint.permanent, 0);
@@ -85,7 +85,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(escrow.epoch(), 1);
         globalPoint = escrow.pointHistory(1);
         assertEq(globalPoint.bias, 997260265926760005 * 2);
-        assertEq(globalPoint.slope, 7927447995 * 2);
+        assertEq(globalPoint.slope, 15854895991 * 2);
         assertEq(globalPoint.ts, 604801);
         assertEq(globalPoint.blk, 1);
         assertEq(globalPoint.permanentLockBalance, 0);
@@ -117,7 +117,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(convert(locked.amount), TOKEN_1);
         assertEq(locked.end, 0);
         assertEq(locked.isPermanent, true);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
 
         assertEq(escrow.userPointEpoch(1), 1);
         userPoint = escrow.userPointHistory(1, 1);
@@ -130,7 +130,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(escrow.epoch(), 1);
         globalPoint = escrow.pointHistory(1);
         assertEq(globalPoint.bias, 997260265926760005);
-        assertEq(globalPoint.slope, 7927447995);
+        assertEq(globalPoint.slope, 15854895991);
         assertEq(globalPoint.ts, 604801);
         assertEq(globalPoint.blk, 1);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1);
@@ -198,7 +198,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(convert(locked.amount), TOKEN_1 * 10);
         assertEq(locked.end, 0);
         assertEq(locked.isPermanent, true);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
 
         assertEq(escrow.userPointEpoch(1), 1);
         userPoint = escrow.userPointHistory(1, 1);
@@ -211,7 +211,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(escrow.epoch(), 1);
         globalPoint = escrow.pointHistory(1);
         assertEq(globalPoint.bias, 997260265926760005);
-        assertEq(globalPoint.slope, 7927447995);
+        assertEq(globalPoint.slope, 15854895991);
         assertEq(globalPoint.ts, 604801);
         assertEq(globalPoint.blk, 1);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 10);
@@ -318,20 +318,20 @@ contract DelegateTest is ExtendedBaseTest {
         // voting checkpoints:  1 | 1 | 1 | 0 | 0
         // global point epoch:  2
         vm.startPrank(address(owner3));
-        AERO.approve(address(escrow), type(uint256).max);
+        STREET.approve(address(escrow), type(uint256).max);
         escrow.createLock(TOKEN_1, MAXTIME); // 3
         vm.stopPrank();
 
         locked = escrow.locked(3);
         assertEq(convert(locked.amount), TOKEN_1);
-        assertEq(locked.end, 126403200);
+        assertEq(locked.end, 63504000);
         assertEq(locked.isPermanent, false);
-        assertEq(escrow.slopeChanges(126403200), -7927447995 * 2);
+        assertEq(escrow.slopeChanges(63504000), -15854895991 * 2);
 
         assertEq(escrow.userPointEpoch(3), 1);
         userPoint = escrow.userPointHistory(3, 1);
-        assertEq(userPoint.bias, 996575334419992005); // (TOKEN_1 / MAXTIME) * (126403200 - 691201)
-        assertEq(userPoint.slope, 7927447995); // TOKEN_1 / MAXTIME
+        assertEq(userPoint.bias, 996575334419992005); // (TOKEN_1 / MAXTIME) * (63504000 - 691201)
+        assertEq(userPoint.slope, 15854895991); // TOKEN_1 / MAXTIME
         assertEq(userPoint.ts, 691201);
         assertEq(userPoint.blk, 2);
         assertEq(userPoint.permanent, 0);
@@ -339,7 +339,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(escrow.epoch(), 2);
         globalPoint = escrow.pointHistory(2);
         assertEq(globalPoint.bias, 996575334419992005 * 2); // 1 has decayed to the same bias of 3
-        assertEq(globalPoint.slope, 7927447995 * 2);
+        assertEq(globalPoint.slope, 15854895991 * 2);
         assertEq(globalPoint.ts, 691201);
         assertEq(globalPoint.blk, 2);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 10);
@@ -375,7 +375,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(convert(locked.amount), TOKEN_1);
         assertEq(locked.end, 0);
         assertEq(locked.isPermanent, true);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
 
         assertEq(escrow.userPointEpoch(2), 2);
         userPoint = escrow.userPointHistory(2, 2);
@@ -388,7 +388,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(escrow.epoch(), 2);
         globalPoint = escrow.pointHistory(2);
         assertEq(globalPoint.bias, 996575334419992005);
-        assertEq(globalPoint.slope, 7927447995);
+        assertEq(globalPoint.slope, 15854895991);
         assertEq(globalPoint.ts, 691201);
         assertEq(globalPoint.blk, 2);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 11);
@@ -442,7 +442,7 @@ contract DelegateTest is ExtendedBaseTest {
 
         assertEq(escrow.balanceOfNFT(2), TOKEN_1);
         assertEq(escrow.getPastVotes(address(owner2), 2, 691202), TOKEN_1 * 10);
-        // 996575334419992005 - 7927447995 * 1 (bias - slope * ts delta)
+        // 996575334419992005 - 15854895991 * 1 (bias - slope * ts delta)
         assertEq(escrow.balanceOfNFT(3), 996575326492544010);
 
         assertEq(escrow.totalSupply(), escrow.balanceOfNFT(1) + escrow.balanceOfNFT(2) + escrow.balanceOfNFT(3));
@@ -469,7 +469,7 @@ contract DelegateTest is ExtendedBaseTest {
         assertEq(convert(locked.amount), TOKEN_1 * 5);
         assertEq(locked.end, 0);
         assertEq(locked.isPermanent, true);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
 
         assertEq(escrow.userPointEpoch(2), 3);
         userPoint = escrow.userPointHistory(2, 3);
@@ -481,9 +481,9 @@ contract DelegateTest is ExtendedBaseTest {
 
         assertEq(escrow.epoch(), 3);
         globalPoint = escrow.pointHistory(3);
-        // 996575334419992005 - 7927447995 * 3601 (bias - slope * ts delta)
+        // 996575334419992005 - 15854895991 * 3601 (bias - slope * ts delta)
         assertEq(globalPoint.bias, 996546787679762010);
-        assertEq(globalPoint.slope, 7927447995);
+        assertEq(globalPoint.slope, 15854895991);
         assertEq(globalPoint.ts, 694802);
         assertEq(globalPoint.blk, 4);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 15);
@@ -576,24 +576,24 @@ contract DelegateTest is ExtendedBaseTest {
 
         locked = escrow.locked(1);
         assertEq(convert(locked.amount), TOKEN_1 * 10);
-        assertEq(locked.end, 127008000);
+        assertEq(locked.end, 64033200); // (1299602 + MAXTIME) rounded to week
         assertEq(locked.isPermanent, false);
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
-        assertEq(escrow.slopeChanges(127008000), -79274479959);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
+        assertEq(escrow.slopeChanges(64033200), -158548959910); // 10-token lock end
 
         assertEq(escrow.userPointEpoch(1), 2);
         userPoint = escrow.userPointHistory(1, 2);
-        assertEq(userPoint.bias, 9965467877928995682); // (TOKEN_1 * 10 / MAXTIME) * (127008000 - 1299602)
-        assertEq(userPoint.slope, 79274479959); // TOKEN_1 * 10 / MAXTIME
+        assertEq(userPoint.bias, 9965467877928995682); // (TOKEN_1 * 10 / MAXTIME) * (lock_end - 1299602)
+        assertEq(userPoint.slope, 158548959910); // TOKEN_1 * 10 / MAXTIME
         assertEq(userPoint.ts, 1299602);
         assertEq(userPoint.blk, 5);
         assertEq(userPoint.permanent, 0);
 
         assertEq(escrow.epoch(), 5);
         globalPoint = escrow.pointHistory(5);
-        // 996546787679762010 - 7927447995 * 604800 = 991752267132386010 (decay 3 by another week)
+        // 996546787679762010 - 15854895991 * 604800 = 991752267132386010 (decay 3 by another week)
         assertEq(globalPoint.bias, 9965467877928995682 + 991752267132386010); // bias of 1 + bias of 3
-        assertEq(globalPoint.slope, 79274479959 + 7927447995); // slope of 1 + slope of 3
+        assertEq(globalPoint.slope, 158548959910 + 15854895991); // slope of 1 + slope of 3
         assertEq(globalPoint.ts, 1299602);
         assertEq(globalPoint.blk, 5);
         assertEq(globalPoint.permanentLockBalance, TOKEN_1 * 5);
@@ -645,18 +645,18 @@ contract DelegateTest is ExtendedBaseTest {
         // user points:         2 | 3 | 2 | 0 | 0
         // voting checkpoints:  2 | 3 | 5 | 0 | 0
         // global point epoch:  214
-        uint256 balance = AERO.balanceOf(address(owner3));
+        uint256 balance = STREET.balanceOf(address(owner3));
         vm.prank(address(owner3));
         escrow.withdraw(3);
-        assertEq(AERO.balanceOf(address(owner3)) - balance, TOKEN_1);
+        assertEq(STREET.balanceOf(address(owner3)) - balance, TOKEN_1);
 
         locked = escrow.locked(3);
         assertEq(convert(locked.amount), 0);
         assertEq(locked.end, 0);
         assertEq(locked.isPermanent, false);
         // slope changes not updated on burn, already in the past
-        assertEq(escrow.slopeChanges(126403200), -7927447995);
-        assertEq(escrow.slopeChanges(127008000), -79274479959);
+        assertEq(escrow.slopeChanges(63504000), -15854895991);
+        assertEq(escrow.slopeChanges(64033200), -158548959910);
 
         assertEq(escrow.userPointEpoch(3), 2);
         userPoint = escrow.userPointHistory(3, 2);

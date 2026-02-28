@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/StdJson.sol";
 import "../test/Base.sol";
+import {IMinter} from "../contracts/interfaces/IMinter.sol";
 
 contract DeployGovernors is Script {
     using stdJson for string;
@@ -16,9 +17,9 @@ contract DeployGovernors is Script {
 
     address team;
 
-    VotingEscrow public escrow;
+    VeStreet public escrow;
     Forwarder public forwarder;
-    Minter public minter;
+    IMinter public minter;
     ProtocolGovernor public governor;
     EpochGovernor public epochGovernor;
 
@@ -35,9 +36,9 @@ contract DeployGovernors is Script {
         path = string.concat(basePath, "output/DeployCore-");
         path = string.concat(path, outputFilename);
         jsonOutput = vm.readFile(path);
-        escrow = VotingEscrow(abi.decode(vm.parseJson(jsonOutput, ".VotingEscrow"), (address)));
+        escrow = VeStreet(abi.decode(vm.parseJson(jsonOutput, ".VotingEscrow"), (address)));
         forwarder = Forwarder(abi.decode(vm.parseJson(jsonOutput, ".Forwarder"), (address)));
-        minter = Minter(abi.decode(vm.parseJson(jsonOutput, ".Minter"), (address)));
+        minter = IMinter(abi.decode(vm.parseJson(jsonOutput, ".Minter"), (address)));
 
         vm.startBroadcast(deployAddress);
 
